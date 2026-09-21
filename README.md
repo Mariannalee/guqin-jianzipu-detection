@@ -25,6 +25,8 @@
 ```text
 .
 ├── infer.py                         # 呼叫PaddleOCR進行字框推論
+├── labeler.py                       # 依序命名與相似圖片建議工具
+├── requirements-labeler.txt
 ├── configs/
 │   └── guqin_PP-OCRv5_mobile_det.yml
 ├── model/
@@ -94,11 +96,56 @@ python infer.py path/to/images \
 
 本倉庫提供的`infer.py`負責執行模型推論；PDF分頁、上下琴譜外框偵測、直式欄位排序與單字裁切仍屬研究中的前後處理流程，尚未整理成通用API。
 
+## 互動式命名工具
+
+`labeler.py`用於依琴譜順序標註已切割的單字圖片。畫面同時顯示前兩張、目前圖片與後兩張，方便參照前後文；可使用上一張、下一張及「下一張未命名」切換。
+
+以下五張為連續圖片。個別裁切後的小部件有時無法單獨判斷，因此標註介面會保留相鄰圖片供人工參考。
+
+| 前二張 | 前一張 | 目前圖片 | 後一張 | 後二張 |
+| --- | --- | --- | --- | --- |
+| ![](examples/labeling/019-1-001.png) | ![](examples/labeling/019-1-002.png) | ![](examples/labeling/019-1-003.png) | ![](examples/labeling/019-1-004.png) | ![](examples/labeling/019-1-005.png) |
+
+標註欄位只有：
+
+- `string1`：第一個弦序資訊。
+- `string2`：第二個弦序資訊。
+- `hui1`：第一個徽位。
+- `hui2`：第二個徽位。
+- `other`：其他指法、演奏符號或備註。
+
+安裝命名工具所需套件：
+
+```bash
+python -m pip install -r requirements-labeler.txt
+```
+
+Python環境也必須包含Tkinter。Windows官方Python通常已包含；macOS或Linux若缺少，請使用系統套件管理工具安裝對應的Python Tk套件。
+
+啟動工具：
+
+```bash
+python labeler.py path/to/cropped_glyphs
+```
+
+也可以指定資料庫與CSV的位置：
+
+```bash
+python labeler.py path/to/cropped_glyphs \
+  --database annotations.sqlite3 \
+  --csv annotations.csv
+```
+
+每次按下「確認」後，結果會立即寫入SQLite並同步輸出CSV；關閉程式後標註與瀏覽進度不會消失。尚未標註的圖片會保留在影像索引中，但不會寫入空白答案。
+
+工具會記錄每張圖片的64-bit dHash及墨跡比例，並以已確認的相似圖片提出最多三組候選標註。這是相似影像檢索，不是重新訓練深度學習權重；建議結果仍須由使用者確認或修改。
+
 ## 模型限制
 
 - 模型主要學習《五知齋琴譜》的掃描與排版風格。
 - 不同刻本、字體、解析度或影像品質可能降低效果。
 - 本模型只做字框偵測，不輸出`string1`、`string2`、`hui1`、`hui2`或`other`。
+- 命名工具的候選建議只使用簡易影像特徵，不代表正式辨識準確率。
 - 範例影像只供研究方法展示，不代表完整資料集。
 
 ## 技術來源

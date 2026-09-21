@@ -7,3 +7,6 @@ dataset/
 *.pdf
 *.sqlite3
 model/best_accuracy.pdparams
+*.sqlite3-wal
+*.sqlite3-shm
+guqin_labels.csv
